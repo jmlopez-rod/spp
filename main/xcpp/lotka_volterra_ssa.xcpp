@@ -1,0 +1,90 @@
+"""Lotka-Volterra SSA
+
+Set of functions to perform simulations on the Lotka-Volterra model
+using Gillespie's Stochastic Simulation Algorithm (SSA).
+
+"""
+[[
+#include <debugoff.h>
+]]
+#include <spp/spp.h>
+#include <spp/models/lotka_volterra_ssa.h>
+#include <spp/methods/gillespie.h>
+
+----------------------------------------------------------------------
+// RAND_PATH
+#include <spp/collectors/rand_path.h>
+@def{rand_path}
+    """Generate realizations from the Lotka-Volterra Model by
+    collecting each point that Gillespie's stochastic simulation
+    algorithm generates. This function returns `t` and `x`. """
+    @param{int, npoints(1000), "number of points per realization"}
+    @param{int, ntrials(1), "number of realizations"}
+@body[[
+    LotkaVolterraSSA model;
+    Gillespie method(model);
+    RandPath dc(method, npoints, ntrials);
+
+    for (int trial = 0; trial < ntrials; ++trial) {
+        method.new_trial();
+        dc.new_trial();
+        while (method.time < INFINITY) {
+            model.eval_prop(method.x);
+            method.get_time_step();
+            if (method.update_system()) break;
+            dc.process_info();
+            if (dc.is_complete()) break;
+        }
+        method.end_trial();
+        dc.end_trial();
+    }
+    dc.end_sim();
+]]
+@ret[[
+    if (ntrials == 1) {
+        @ret{dc.t[0], "t", dc.t[0][0]}
+        @ret{dc.x[0], "x", dc.x[0][0]}
+    } else {
+        @ret{dc.t, "t", dc.t[0]}
+        @ret{dc.x, "x", dc.x[0]}
+    }
+]]
+
+----------------------------------------------------------------------
+// TIME_SERIES
+#include <spp/collectors/time_series.h>
+@def{time_series}
+    """Generate realizations from the Lotka-Volterra Model by
+    collecting points that Gillespie's stochastic simulation
+    algorithm generates at a given frequency. This function returns
+    `t` and `x`. """
+    @param{int, npoints(1000), "number of points per realization"}
+    @param{int, ntrials(1), "number of realizations"}
+    @param{double, freq(100.0), "collection frequency"}
+@body[[
+    LotkaVolterraSSA model;
+    Gillespie method(model);
+    TimeSeries dc(method, npoints, ntrials, freq);
+
+    for (int trial = 0; trial < ntrials; ++trial) {
+        method.new_trial();
+        dc.new_trial();
+        while (method.time < INFINITY) {
+            model.eval_prop(method.x);
+            method.get_time_step();
+            if (method.update_system()) break;
+            dc.process_info();
+            if (dc.is_complete()) break;
+        }
+        method.end_trial();
+        dc.end_trial();
+    }
+    dc.end_sim();
+]]
+@ret[[
+    @ret{dc.t, "t", dc.t[0]}
+    if (ntrials == 1) @ret{dc.x[0], "x", dc.x[0][0]}
+    else @ret{dc.x, "x", dc.x[0]}
+]]
+
+----------------------------------------------------------------------

@@ -1,0 +1,104 @@
+"""Negative FeedBack DSSA
+
+Set of functions to perform simulations on the Negative Feedback
+model using a delayed Stochastic Simulation Algorithm (DSSA).
+
+"""
+[[
+#include <debugoff.h>
+]]
+#include <spp/spp.h>
+#include <spp/models/nfb_ssa.h>
+#include <spp/methods/delayed_ssa.h>
+
+----------------------------------------------------------------------
+// RAND_PATH
+#define EVENT_STACK_H linked_event_stack.h
+#define EVENT_STACK LinkedEventStack
+#include SPP_INCLUDE(spp/methods/EVENT_STACK_H)
+#include <spp/collectors/rand_path.h>
+@def{rand_path}
+    """Generate realizations from the Negative Feedback model by
+    collecting each point that the DSSA generates. This function
+    returns `t` and `x`. """
+    @param{int, npoints(1000), "number of points per realization"}
+    @param{int, ntrials(1), "number of realizations"}
+    @param{double, delay(1), "time by which an event is delayed"}
+@body[[
+    NfbSSA model;
+    DelayedSSA<EVENT_STACK> method(model);
+    RandPath dc(method, npoints, ntrials);
+
+    for (int trial = 0; trial < ntrials; ++trial) {
+        method.new_trial();
+        method.dv[0] = delay;
+        dc.new_trial();
+        while (method.time < INFINITY) {
+            model.eval_prop(method.x);
+            method.get_time_step();
+            if (method.update_system()) break;
+            dc.process_info();
+            if (dc.is_complete()) break;
+        }
+        method.end_trial();
+        dc.end_trial();
+    }
+    dc.end_sim();
+]]
+@ret[[
+    if (ntrials == 1) {
+        @ret{dc.t[0], "t", dc.t[0][0]}
+        @ret{dc.x[0], "x", dc.x[0][0]}
+    } else {
+        @ret{dc.t, "t", dc.t[0]}
+        @ret{dc.x, "x", dc.x[0]}
+    }
+]]
+
+----------------------------------------------------------------------
+// TIME_SERIES
+
+#define EVENT_STACK_H linked_event_stack.h
+#define EVENT_STACK LinkedEventStack
+#include SPP_INCLUDE(spp/methods/EVENT_STACK_H)
+#include <spp/collectors/time_series.h>
+@def{time_series}
+    """Generate realizations from the Negative Feedback model by
+    collecting points that the DSSA generates at a given frequency.
+    This function returns `t` and `x`. """
+    @param{int, npoints(1000), "number of points per realization"}
+    @param{int, ntrials(1), "number of realizations"}
+    @param{double, freq(100.0), "collection frequency"}
+    @param{double, delay(1), "time by which an event is delayed"}
+@body[[
+    NfbSSA model;
+    DelayedSSA<EVENT_STACK> method(model);
+    TimeSeries dc(method, npoints, ntrials, freq);
+
+    for (int trial = 0; trial < ntrials; ++trial) {
+        method.new_trial();
+        method.dv[0] = delay;
+        dc.new_trial();
+        while (method.time < INFINITY) {
+            model.eval_prop(method.x);
+            method.get_time_step();
+            if(method.update_system()) break;
+            dc.process_info();
+            if (dc.is_complete()) break;
+        }
+        method.end_trial();
+        dc.end_trial();
+    }
+    dc.end_sim();
+    #undef EVENT_STACK
+]]
+@ret[[
+    @ret{dc.t, "t", dc.t[0]}
+    if (ntrials == 1) {
+        @ret{dc.x[0], "x", dc.x[0][0]}
+    } else {
+        @ret{dc.x, "x", dc.x[0]}
+    }
+]]
+
+----------------------------------------------------------------------

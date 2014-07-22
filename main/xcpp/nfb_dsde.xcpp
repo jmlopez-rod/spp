@@ -1,0 +1,60 @@
+"""Negative FeedBack DSDE
+
+Set of functions to perform simulations on the Negative Feedback
+model using a delayed stochastic differential equation simulator
+(DSDE).
+
+"""
+[[
+#include <debugoff.h>
+]]
+#include <spp/spp.h>
+#include <spp/models/nfb_dsde.h>
+#define EULER_DSDE_ZERO_BOUNDARY
+#include <spp/methods/euler_dsde.h>
+
+----------------------------------------------------------------------
+// RAND_PATH
+#include <spp/collectors/rand_path.h>
+@def{rand_path}
+    """Generate realizations from the Negative Feedback model by
+    collecting each point that the DSSA generates. This function
+    returns `t` and `x`. """
+    @param{int, npoints(1000), "number of points per realization"}
+    @param{int, ntrials(1), "number of realizations"}
+    @param{double, delay(1), "time by which an event is delayed"}
+@body[[
+    double dt = 0.001;
+    NfbDSDE model(100);
+    EulerDSDE method(model, dt, delay);
+    RandPath dc(method, npoints, ntrials, 1.0, false);
+
+    // Setting the kernel(delay). History is by default all zeros.
+    for (size_t i=0; i < method.kernel.dim(); ++i) method.kernel[i] = 0;
+    if (method.kernel.dim() > 0) method.kernel[0] = 1.0/dt;
+
+    for (int trial = 0; trial < ntrials; ++trial) {
+        method.new_trial();
+        dc.new_trial();
+        while (method.time < INFINITY) {
+            model.compute_dd(method.x, dt, method.hist, method.kernel);
+            method.get_time_step();
+            if(method.update_system()) break;
+            if(dc.process_info()) break;
+        }
+        method.end_trial();
+        dc.end_trial();
+    }
+    dc.end_sim();
+]]
+@ret[[
+    if (ntrials == 1) {
+        @ret{dc.t[0], "t"}
+        @ret{dc.x[0], "x"}
+    } else {
+        @ret{dc.t, "t"}
+        @ret{dc.x, "x"}
+    }
+]]
+
+----------------------------------------------------------------------
