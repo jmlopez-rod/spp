@@ -55,3 +55,10 @@ Once you are familar with it you can call the function
     >>> plot(t, x)
     >>> show()
 
+If you are working with MATLAB you can do
+
+.. code-block:: sh
+
+    help lotka_volterra_ssa.time_series
+    [t, x] = lotka_volterra_ssa.time_series(1000, 1, 10);
+    plot(t, x)
