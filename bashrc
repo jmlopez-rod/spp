@@ -18,3 +18,10 @@ export CPLUS_INCLUDE_PATH=$SPPROOT/include:$CPLUS_INCLUDE_PATH
 # If you have a configuration file for spp that you wish to
 # use then define this variable
 #export SPP_CONFIG_PATH=/path/to/spp.config
+
+source $SPPROOT/main/excentury/bashrc
+
+# TEMPORARY STUFF
+export PYTHONPATH=$SPPROOT/main/python:$PYTHONPATH
+export MATLABPATH=$SPPROOT/main/matlab:$MATLABPATH
+export LD_LIBRARY_PATH=$SPPROOT/main/lib:$LD_LIBRARY_PATH
